@@ -1,0 +1,82 @@
+from flask import Flask
+import json
+import time
+import RPi.GPIO as GPIO # Import Raspberry Pi GPIO libraryd
+import time
+from time import sleep
+from multiprocessing import Process, Value
+
+
+GPIO.setwarnings(False) # Ignore warning for now
+GPIO.setmode(GPIO.BOARD) # Use physical pin numbering
+GPIO.setup(5, GPIO.OUT)
+GPIO.output(5, GPIO.LOW)
+
+
+app = Flask(__name__)
+
+status = "red"
+timer = 15
+
+
+@app.route('/')
+def main():
+
+    global status
+    return "Current Status: " + status
+
+
+@app.route('/setGreen')
+def hello_world():
+    global status
+    if(status != "green"):
+        testing()
+    
+    status = "green"
+
+    return status
+
+
+
+@app.route('/setRed')
+def test():
+    global status
+    if(status != "red"):
+        testing()
+    status = "red"
+
+    return status
+
+
+def testing():
+    if(GPIO.input(5)):
+        GPIO.output(5, GPIO.LOW)
+    else:
+        GPIO.output(5, GPIO.HIGH)
+
+
+@app.before_first_request
+def main2():
+    print("test")
+    global status
+    global timer
+    while(True):
+        print("Test")
+        
+        time.sleep(1)
+        timer -= timer
+
+        if(timer == 0):
+            if(GPIO.input(5)):
+                GPIO.output(5, GPIO.LOW)
+                status = "Red"
+            else:
+                GPIO.output(5, GPIO.HIGH) 
+                status = "Green"
+
+            timer = 15
+if __name__ == "__main__":
+   p = Process(target=main2)
+   p.start()  
+   app.run(debug=False, use_reloader=False)
+   p.join()
